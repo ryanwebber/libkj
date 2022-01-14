@@ -1,103 +1,67 @@
----
-layout: page
-title: Introduction
----
+# Introducing KJ
 
-# Introduction
+KJ is Modern C++'s missing base library.
 
-<img src='images/infinity-times-faster.png' style='width:334px; height:306px; float: right;'>
+## What's wrong with `std`?
 
-Cap'n Proto is an insanely fast data interchange format and capability-based RPC system. Think
-JSON, except binary. Or think [Protocol Buffers](https://github.com/protocolbuffers/protobuf), except faster.
-In fact, in benchmarks, Cap'n Proto is INFINITY TIMES faster than Protocol Buffers.
+The C++ language has advanced rapidly over the last decade. However, its standard library (`std`) remains a weak point. Most modern languages ship with libraries that have built-in support for common needs, such as making HTTP requests. `std`, meanwhile, not only lacks HTTP, but doesn't even support basic networking. Developers are forced either to depend on low-level, non-portable OS APIs, or pull in a bunch of third-party dependencies with inconsistent styles and quality.
 
-This benchmark is, of course, unfair. It is only measuring the time to encode and decode a message
-in memory. Cap'n Proto gets a perfect score because _there is no encoding/decoding step_. The Cap'n
-Proto encoding is appropriate both as a data interchange format and an in-memory representation, so
-once your structure is built, you can simply write the bytes straight out to disk!
+Worse, `std` was largely designed before C++ best practices were established. Much of it predates C++11, which changed almost everything about how C++ is written. Some critical parts of `std` -- such as the `iostreams` component -- were designed before anyone really knew how to write quality object-oriented code, and are atrociously bad by modern standards.
 
-**_But doesn't that mean the encoding is platform-specific?_**
+Finally, `std` is designed by committee, which has advantages and disadvantages. On one hand, committees are less likely to make major errors in design. However, they also struggle to make bold decisions, and they move slowly. Committees can also lose touch with real-world concerns, over-engineering features that aren't needed while missing essential basics.
 
-NO! The encoding is defined byte-for-byte independent of any platform. However, it is designed to
-be efficiently manipulated on common modern CPUs. Data is arranged like a compiler would arrange a
-struct -- with fixed widths, fixed offsets, and proper alignment. Variable-sized elements are
-embedded as pointers. Pointers are offset-based rather than absolute so that messages are
-position-independent. Integers use little-endian byte order because most CPUs are little-endian,
-and even big-endian CPUs usually have instructions for reading little-endian data.
+## How is KJ different?
 
-**_Doesn't that make backwards-compatibility hard?_**
+KJ was designed and implemented primarily by one developer, Kenton Varda. Every feature was designed to solve a real-world need in a project Kenton was working on -- first [Cap'n Proto](https://capnproto.org), then [Sandstorm](https://sandstorm.io), and more recently, [Cloudflare Workers](https://workers.dev). KJ was designed from the beginning to target exclusively Modern C++ (C++11 and later).
 
-Not at all! New fields are always added to the end of a struct (or replace padding space), so
-existing field positions are unchanged. The recipient simply needs to do a bounds check when
-reading each field. Fields are numbered in the order in which they were added, so Cap'n Proto
-always knows how to arrange them for backwards-compatibility.
+Since its humble beginnings in 2013, KJ has developed a huge range of practical functionality, including:
 
-**_Won't fixed-width integers, unset optional fields, and padding waste space on the wire?_**
+* RAII utilities, especially for memory management
+* Basic types and data structures: `Array`, `Maybe`, `OneOf`, `Tuple`, `Function`, `Quantity` (unit analysis), `String`, `Vector`, `HashMap`, `HashSet`, `TreeMap`, `TreeSet`, etc.
+* Convenient stringification
+* Exception/assertion framework with friggin' stack traces
+* Event loop framework with `Promise` API inspired by E (which also inspired JavaScript's `Promise`).
+* Threads, fibers, mutexes, lazy initialization
+* I/O: Clocks, filesystem, networking
+* Protocols: HTTP (client and server), TLS (via OpenSSL/BoringSSL), gzip (via libz)
+* Parsers: URL, JSON (using Cap'n Proto), parser combinator framework
+* Encodings: UTF-8/16/32, base64, hex, URL encoding, C escapes
+* Command-line argument parsing
+* Unit testing framework
+* And more!
 
-Yes. However, since all these extra bytes are zeros, when bandwidth matters, we can apply an
-extremely fast Cap'n-Proto-specific compression scheme to remove them. Cap'n Proto calls this
-"packing" the message; it achieves similar (better, even) message sizes to protobuf encoding, and
-it's still faster.
+KJ is not always perfectly organized, and admittedly has some quirks. But, it has proven pragmatic and powerful in real-world applications.
 
-When bandwidth really matters, you should apply general-purpose compression, like
-[zlib](http://www.zlib.net/) or [LZ4](https://github.com/Cyan4973/lz4), regardless of your
-encoding format.
+# Getting KJ
 
-**_Isn't this all horribly insecure?_**
+KJ is bundled with Cap'n Proto -- see [installing Cap'n Proto](https://capnproto.org/install.html). KJ is built as a separate set of libraries, so that you can link against it without Cap'n Proto if desired.
 
-No no no! To be clear, we're NOT just casting a buffer pointer to a struct pointer and calling it a day.
+KJ is officially tested on Linux (GCC and Clang), Windows (Visual Studio, MinGW, and Cygwin), MacOS, and Android. It should additionally be easy to get working on any POSIX platform targeted by GCC or Clang.
 
-Cap'n Proto generates classes with accessor methods that you use to traverse the message. These accessors validate pointers before following them. If a pointer is invalid (e.g. out-of-bounds), the library can throw an exception or simply replace the value with a default / empty object (your choice).
+# FAQ
 
-Thus, Cap'n Proto checks the structural integrity of the message just like any other serialization protocol would. And, just like any other protocol, it is up to the app to check the validity of the content.
+## What does KJ stand for?
 
-Cap'n Proto was built to be used in [Sandstorm.io](https://sandstorm.io), where security is a major concern. As of this writing, Cap'n Proto has not undergone a security review, therefore we suggest caution when handling messages from untrusted sources. That said, our response to security issues was once described by security guru Ben Laurie as ["the most awesome response I've ever had."](https://twitter.com/BenLaurie/status/575079375307153409) (Please report all security issues to [security@sandstorm.io](mailto:security@sandstorm.io).)
+Nothing.
 
-**_Are there other advantages?_**
+The name "KJ" was chosen to be a relatively unusual combination of two letters that is easy to type (on both Qwerty and Dvorak layouts). This is important, because users of KJ will find themselves typing `kj::` very frequently.
 
-Glad you asked!
+## Why reinvent modern `std` features that are well-designed?
 
-* **Incremental reads:** It is easy to start processing a Cap'n Proto message before you have
-  received all of it since outer objects appear entirely before inner objects (as opposed to most
-  encodings, where outer objects encompass inner objects).
-* **Random access:** You can read just one field of a message without parsing the whole thing.
-* **mmap:** Read a large Cap'n Proto file by memory-mapping it. The OS won't even read in the
-  parts that you don't access.
-* **Inter-language communication:** Calling C++ code from, say, Java or Python tends to be painful
-  or slow. With Cap'n Proto, the two languages can easily operate on the same in-memory data
-  structure.
-* **Inter-process communication:** Multiple processes running on the same machine can share a
-  Cap'n Proto message via shared memory. No need to pipe data through the kernel. Calling another
-  process can be just as fast and easy as calling another thread.
-* **Arena allocation:** Manipulating Protobuf objects tends to be bogged down by memory
-  allocation, unless you are very careful about object reuse. Cap'n Proto objects are always
-  allocated in an "arena" or "region" style, which is faster and promotes cache locality.
-* **Tiny generated code:** Protobuf generates dedicated parsing and serialization code for every
-  message type, and this code tends to be enormous. Cap'n Proto generated code is smaller by an
-  order of magnitude or more.  In fact, usually it's no more than some inline accessor methods!
-* **Tiny runtime library:** Due to the simplicity of the Cap'n Proto format, the runtime library
-  can be much smaller.
-* **Time-traveling RPC:** Cap'n Proto features an RPC system that implements [time travel](rpc.html)
-  such that call results are returned to the client before the request even arrives at the server!
+Some features of KJ appear to replace `std` features that were introduced recently with decent, modern designs. Examples include `kj::Own` vs `std::unique_ptr`, `kj::Maybe` vs `std::optional`, and `kj::Promise` vs `std::task`.
 
-<a href="rpc.html"><img src='images/time-travel.png' style='max-width:639px'></a>
+First, in many cases, the KJ feature actually predates the corresponding `std` feature. `kj::Maybe` was one of the first KJ types, introduced in 2013; `std::optional` arrived in C++17. `kj::Promise` was also introduced in 2013; `std::task` is coming in C++20 (with coroutines).
 
+Second, consistency. KJ uses somewhat different idioms from `std`, resulting in some friction when trying to use KJ and `std` types together. The most obvious friction is aesthetic (e.g. naming conventions), but some deeper issues exist. For example, KJ tries to treat `const` as transitive, especially so that it can be used to help enforce thread-safety. This can lead to subtle problems (e.g. unexpected compiler errors) with `std` containers not designed with transitive constness in mind. KJ also uses a very different [philosophy around exceptions](../style-guide.md#exceptions) compared to `std`; KJ believes exception-free code is a myth, but `std` sometimes requires it.
 
-**_Why do you pick on Protocol Buffers so much?_**
+Third, even some modern `std` APIs have design flaws. For example, `std::optional`s can be dereferenced without an explicit null check, resulting in a crash if the value is null -- exactly what this type should have existed to prevent! `kj::Maybe`, in contrast, forces you to write an if/else block or an explicit assertion. For another example, `kj::Own` uses dynamic dispatch for deleters, which allows for lots of useful patterns that `std::unique_ptr`'s static dispatch cannot do.
 
-Because it's easy to pick on myself. :) I, Kenton Varda, was the primary author of Protocol Buffers
-version 2, which is the version that Google released open source. Cap'n Proto is the result of
-years of experience working on Protobufs, listening to user feedback, and thinking about how
-things could be done better.
+## Shouldn't modern software be moving away from memory-unsafe languages?
 
-Note that I no longer work for Google. Cap'n Proto is not, and never has been, affiliated with Google; in fact, it is a property of [Sandstorm.io](https://sandstorm.io), of which I am co-founder.
+Probably!
 
-**_OK, how do I get started?_**
+Similarly, modern software should also move away from type-unsafe languages. Type-unsafety and memory-unsafety are both responsible for a huge number of security bugs. (Think SQL injection for an example of a security bug resulting from type-unsafety.)
 
-To install Cap'n Proto, head over to the [installation page](install.html).  If you'd like to help
-hack on Cap'n Proto, such as by writing bindings in other languages, let us know on the
-[discussion group](https://groups.google.com/group/capnproto).  If you'd like to receive e-mail
-updates about future releases, add yourself to the
-[announcement list](https://groups.google.com/group/capnproto-announce).
+Hence, all other things being equal, I would suggest Rust for new projects.
 
-{% include buttons.html %}
+But it's rare that all other things are really equal, and you may have your reasons for using C++. KJ is here to help, not to judge.

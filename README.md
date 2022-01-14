@@ -1,10 +1,35 @@
-[![Quick Tests](https://github.com/capnproto/capnproto/workflows/Quick%20Tests/badge.svg?branch=master&event=push)](https://github.com/capnproto/capnproto/actions?query=workflow%3A%22Quick+Tests%22)
-[![Release Tests](https://github.com/capnproto/capnproto/workflows/Release%20Tests/badge.svg?branch=master&event=push)](https://github.com/capnproto/capnproto/actions?query=workflow%3A%22Release+Tests%22)
+# LibKJ
 
-<img src='http://kentonv.github.io/capnproto/images/infinity-times-faster.png' style='width:334px; height:306px; float: right;'>
+An excellent C++ utility library used in Cap'n Proto that has been extracted into its
+own github repository here.
 
-Cap'n Proto is an insanely fast data interchange format and capability-based RPC system. Think
-JSON, except binary. Or think [Protocol Buffers](https://github.com/google/protobuf), except faster.
-In fact, in benchmarks, Cap'n Proto is INFINITY TIMES faster than Protocol Buffers.
+## Building
 
-[Read more...](http://kentonv.github.io/capnproto/)
+The KJ libraries can be built out-of-source with CMake:
+```bash
+git clone git@github.com:ryanwebber/libkj.git
+cd libkj
+mkdir build
+cd build
+cmake ../
+make -j 4
+```
+
+This will produce the following static libraries:
+ * libkj-async
+ * libkj-gzip
+ * libkj-http
+ * libkj-test
+ * libkj-tls
+ * libkj
+
+## Contributing
+
+Please contribute work to the source in the core Cap'n Proto repository according to
+their contribution guidelines. Sane maintenance changes (updating to new Cap'n Proto
+versions, fixing build issues, etc) are gratefully welcome!
+
+## Licence
+MIT - just as the Cap'n Proto source. A copy of the original licence and all copywrite
+notices have been retained accordingly.
+
