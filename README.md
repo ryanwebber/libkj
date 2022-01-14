@@ -27,7 +27,7 @@ This will produce the following static libraries:
 
 Please contribute work to the source in the core Cap'n Proto repository according to
 their contribution guidelines. Sane maintenance changes (updating to new Cap'n Proto
-versions, fixing build issues, etc) are gratefully welcome!
+versions, fixing build issues, etc) are gratefully welcome here!
 
 ## Licence
 MIT - just as the Cap'n Proto source. A copy of the original licence and all copywrite
